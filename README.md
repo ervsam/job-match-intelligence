@@ -21,20 +21,26 @@ Built as a portfolio project to demonstrate end-to-end production AI/LLM system 
 ---
 
 ## Architecture
+```
 Gmail API
-└── src/fetch_emails.py   →  data/raw_emails.jsonl      (metadata: 157 emails)
-└── src/parse_emails.py   →  data/parsed_jobs.jsonl     (with body text)
+    └── src/fetch_emails.py   →  data/raw_emails.jsonl      (metadata: 157 emails)
+    └── src/parse_emails.py   →  data/parsed_jobs.jsonl     (with body text)
+
 OpenAI Embeddings (text-embedding-3-small)
-└── src/embed.py          →  data/profile_embedding.json  (candidate profile vector)
-└── src/embed_jobs.py     →  data/job_embeddings.jsonl    (157 job vectors, dim=1536)
+    └── src/embed.py          →  data/profile_embedding.json  (candidate profile vector)
+    └── src/embed_jobs.py     →  data/job_embeddings.jsonl    (157 job vectors, dim=1536)
+
 ChromaDB (cosine similarity)
-└── src/vectorstore.py    →  data/chromadb/               (persistent local store)
-query() → top-N ranked jobs
+    └── src/vectorstore.py    →  data/chromadb/               (persistent local store)
+                                  query() → top-N ranked jobs
+
 GPT-4o
-└── src/reason.py         →  data/scored_jobs.jsonl       (fit analysis per job)
-└── src/eval.py           →  data/eval_results.jsonl      (LLM-as-judge eval scores)
+    └── src/reason.py         →  data/scored_jobs.jsonl       (fit analysis per job)
+    └── src/eval.py           →  data/eval_results.jsonl      (LLM-as-judge eval scores)
+
 Streamlit
-└── app.py                →  localhost:8501               (ranked UI with analysis)
+    └── app.py                →  localhost:8501               (ranked UI with analysis)
+```
 
 ---
 
