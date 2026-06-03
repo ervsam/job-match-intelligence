@@ -4,7 +4,7 @@ A RAG-powered pipeline that ingests job postings from Gmail, ranks them by relev
 
 Built as a portfolio project to demonstrate end-to-end production AI/LLM system skills.
 
-**[Live Demo →](your-streamlit-url-here)** *(add after deploy)*
+**[Live Demo →](https://job-match-intelligence.streamlit.app/)**
 
 ---
 
