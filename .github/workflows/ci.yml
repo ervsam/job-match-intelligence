@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t job-match-intelligence .
+
+      - name: Verify container starts
+        run: |
+          docker run -d \
+            -p 8501:8501 \
+            -e OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
+            --name test-container \
+            job-match-intelligence
+          sleep 5
+          docker ps | grep test-container
+          docker stop test-container

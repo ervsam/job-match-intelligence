@@ -1,0 +1,8 @@
+venv/
+.env
+token.pickle
+credentials.json
+data/chromadb/
+__pycache__/
+*.pyc
+.git/
