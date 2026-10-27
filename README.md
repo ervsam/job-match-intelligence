@@ -72,7 +72,7 @@ The profile and job corpus change constantly. Fine-tuning is expensive and doesn
 | Top match similarity score | 0.691 (Picovoice — Deep Learning Researcher) |
 | Avg GPT-4o fit score (top 10) | 8.0 / 10 |
 | Avg eval relevance | 4.3 / 5 |
-| Avg eval faithfulness | 3.1 / 5 |
+| Avg eval faithfulness | 3.2 / 5 |
 | Avg eval actionability | 4.0 / 5 |
 
 ---
@@ -84,7 +84,79 @@ The profile and job corpus change constantly. Fine-tuning is expensive and doesn
 - **ChromaDB** — local persistent vector store
 - **Gmail API** — OAuth 2.0 for email ingestion
 - **Streamlit** — UI
-- **python-dotenv** — secrets management
+- **Docker** / **Docker Compose** — containerisation, with a GitHub Actions
+  workflow that builds the image and boots the container on every push to `main`
+- **AWS** — ECR, ECS Fargate, Secrets Manager, IAM (see Deployment)
+- **python-dotenv** — secrets management (local only; see Deployment)
+
+---
+
+## Deployment
+
+### Streamlit Cloud (current public demo)
+
+The live link above runs on Streamlit Cloud's free tier, serving pre-computed
+data committed to the repo. Gmail ingestion is local-only — `src/auth.py` uses
+`InstalledAppFlow.run_local_server()`, a loopback OAuth flow that requires a
+browser on the same machine, so re-ingesting from Gmail cannot run on a hosted
+deploy. The hosted app is effectively read-only over the last local run.
+
+Free-tier apps sleep after roughly 7 days idle and take ~10 seconds to wake.
+
+### AWS ECS Fargate (containerised deploy)
+
+Also deployed on AWS, to run the same container without the idle-sleep
+behaviour:
+
+```
+Docker image  ──push──>  ECR (private registry)
+                           │
+                           │ referenced by
+                           ▼
+                    Task definition  ──reads──>  Secrets Manager
+                    1 vCPU · 3 GB                (OPENAI_API_KEY)
+                    port 8501                          │
+                           │                           │
+                    ECS Service                        │ injected at
+                    desired count 1                    │ container start
+                           │                           │
+                           ▼                           ▼
+                    Fargate task  ◄────────────────────┘
+                    public IP : 8501
+```
+
+Specifics:
+
+- **ECR** — image built `--platform linux/amd64` (Fargate runs x86; an ARM
+  image from Apple Silicon pushes successfully and then fails at runtime with
+  `exec format error`).
+- **Secrets Manager** — `OPENAI_API_KEY` is stored as a secret and referenced
+  from the task definition by ARN, not set as a plaintext environment
+  variable. The execution role carries an inline policy granting
+  `secretsmanager:GetSecretValue` scoped to that single secret ARN;
+  `AmazonECSTaskExecutionRolePolicy` alone does not cover reading secrets.
+- **Task definition revisions** are immutable — revision 1 used a plaintext
+  env var, revision 2 replaced it with the secret reference.
+- **Networking** — `awsvpc` mode with a public IP, security group allowing
+  inbound TCP 8501 only.
+
+**The Fargate service is intentionally torn down.** Fargate bills ~$0.059/hour
+for this task size (1 vCPU + 3 GB + a public IPv4 address), around $42/month
+running continuously, and a Fargate task's public IP changes on every
+replacement — so it was never a stable link. The ECR image, cluster, task
+definitions, and secret remain, so redeploying is a single `create-service`
+call. Streamlit Cloud remains the public demo.
+
+Recreate with:
+
+```bash
+aws ecs create-service \
+  --cluster job-match-cluster \
+  --service-name job-match-service \
+  --task-definition job-match-task:2 \
+  --desired-count 1 --launch-type FARGATE \
+  --network-configuration "awsvpcConfiguration={subnets=[...],securityGroups=[...],assignPublicIp=ENABLED}"
+```
 
 ---
 
