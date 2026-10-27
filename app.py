@@ -3,6 +3,12 @@ import json
 from src.vectorstore import query
 from src.reason import analyze_job, load_profile
 
+import os
+
+# Auto-ingest into ChromaDB if collection is empty (handles cold cloud start)
+from src.vectorstore import ingest
+ingest()
+
 st.set_page_config(page_title="Job Match Intelligence", layout="wide")
 st.title("🎯 Job Match Intelligence")
 st.caption("RAG-powered job ranking and fit analysis from your Gmail inbox")
